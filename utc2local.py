@@ -1,8 +1,11 @@
 from shutil import copyfile
 from pathlib import Path
+from datetime import datetime
 import os
 
+
 # Constants
+
 
 ADD_HOURS = 3
 NEW_TIME_ZONE = '+03:00'
@@ -11,7 +14,12 @@ TRADESDATES_FILENAME = 'tradesCsvDates.txt'
 NEW_HISTORYDATA_PATH = './DTR_HistoryData'
 CONVERTEDDATES_PATH = './converteddates.txt'
 
+print(f'ADD_HOURS {ADD_HOURS}')
+print(f'NEW_TIME_ZONE {NEW_TIME_ZONE}')
+
+
 # Methods
+
 
 def getDirsFromPath(path):
     dirs = []
@@ -37,9 +45,28 @@ def convert(fdSrc, fdDst):
         dstLine = ';'.join(dataArray)
         fdDst.write(dstLine)
 
+def getConvertedDates(fdConvertedDates):
+    fdConvertedDates.seek(0)
+    convertedDates = set()
+    for date in fdConvertedDates:
+        convertedDates.add(date.strip())
+
+    return convertedDates
+
+def addDate(fdConvertedDates, dateDirName):
+    fdConvertedDates.write(f'{dateDirName}\n')
+
+
 # Main
 
+
+nowDateStr = datetime.now().strftime('%Y_%m_%d')
 srcRDir = f'R/'
+
+fdConvertedDates = open(CONVERTEDDATES_PATH, 'a+')
+convertedDates = getConvertedDates(fdConvertedDates)
+print('Converted dates:', convertedDates)
+
 # Securities
 securities2convert = getDirsFromPath(srcRDir)
 print('Securities to convert:', securities2convert)
@@ -47,25 +74,32 @@ for security in securities2convert:
     print('Security:', security)
     try:
         srcSecurityDir = f'{srcRDir}/{security}/'
-        # Date dirs
+        dstRDir = f'{NEW_HISTORYDATA_PATH}/R/'
+        dstSecurityDir = f'{dstRDir}/{security}/'
+
+        # Date dirs convertion
         dateDirs = getDirsFromPath(srcSecurityDir)
         print('Date dirs:', dateDirs)
         for dateDir in dateDirs:
-            srcdateDir = f'{srcSecurityDir}/{dateDir}'
-            srcFilePath = f'{srcdateDir}/{DAYTRADES_FILENAME}'
-            fdSrc = open(srcFilePath, 'r')
-            # Convertion pipe
-            try:
-                dstRDir = f'{NEW_HISTORYDATA_PATH}/R/'
-                dstSecurityDir = f'{dstRDir}/{security}/'
-                dstdateDir = f'{dstSecurityDir}/{dateDir}'
-                dstFilePath = f'{dstdateDir}/{DAYTRADES_FILENAME}'
+            if dateDir not in convertedDates:
+                srcdateDir = f'{srcSecurityDir}/{dateDir}'
+                srcFilePath = f'{srcdateDir}/{DAYTRADES_FILENAME}'
+                fdSrc = open(srcFilePath, 'r')
 
-                mkdir(dstdateDir)
-                fdDst = open(dstFilePath, 'w+')
-                convert(fdSrc, fdDst)
-            except Exception:
-                print('-  Convertion exception')
+                # Convertion pipe
+                try:
+                    dstdateDir = f'{dstSecurityDir}/{dateDir}'
+                    dstFilePath = f'{dstdateDir}/{DAYTRADES_FILENAME}'
+
+                    mkdir(dstdateDir)
+                    fdDst = open(dstFilePath, 'w+')
+                    convert(fdSrc, fdDst)
+
+                    if nowDateStr != dateDir:
+                        addDate(fdConvertedDates, dateDir)
+                except Exception:
+                    print('-  Convertion exception')
+
         # Trades dates copy
         copyfile(f'{srcSecurityDir}/{TRADESDATES_FILENAME}', f'{dstSecurityDir}/{TRADESDATES_FILENAME}')
     except Exception:
