@@ -1,6 +1,6 @@
 @echo off
 
-python utc2local.py
+python convert4dtr.py
 
 echo .
 echo ##################################

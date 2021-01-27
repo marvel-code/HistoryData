@@ -1,0 +1,8 @@
+{
+	"hours2add": 0,
+	"newtimezone": "+03:00",
+	"daytrades_filename": "trades.csv",
+	"tradedates_filename": "tradesCsvDates.txt",
+	"newhistorydata_path": "./DTR_HistoryData",
+	"converteddates_path": "./convert4dtr_convertedDates.txt"
+}
